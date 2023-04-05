@@ -32,9 +32,9 @@ def get_status(req_id, req_password):
                    (req_id, req_password))
     records = dbc.fetchall()
     if len(records) == 1:
-        return json.dumps({'status': 'ok', 'taken': records[0][0]}) + '\n'
+        return {'status': 'ok', 'taken': records[0][0]}
 
-    return json.dumps({'status': 'fail'}) + '\n'
+    return {'status': 'fail'}
 
 
 @app.route('/status')
@@ -61,7 +61,7 @@ def monitor():
 
     def loop():
         while True:
-            yield get_status(req_id, req_password)
+            yield json.dumps(get_status(req_id, req_password)) + '\n'
             time.sleep(1)
     return flask.stream_with_context(loop())
 
