@@ -5,9 +5,11 @@ import flask
 import json
 import secrets
 import sqlite3
+import threading
 import time
 
-# FIXME: check_same_thread=False is not a solution! sync somewhere else!
+lock = threading.Lock()
+
 db = sqlite3.connect('database.db', check_same_thread=False)
 
 dbc = db.cursor()
@@ -27,10 +29,11 @@ db.commit()
 app = flask.Flask(__name__)
 
 def get_status(req_id, req_password):
-    dbc.execute('''SELECT taken FROM mutexes
-                   WHERE id = ? AND password = ?''',
-                   (req_id, req_password))
-    records = dbc.fetchall()
+    with lock:
+        dbc.execute('''SELECT taken FROM mutexes
+                       WHERE id = ? AND password = ?''',
+                       (req_id, req_password))
+        records = dbc.fetchall()
     if len(records) == 1:
         return {'status': 'ok', 'taken': records[0][0]}
 
@@ -49,8 +52,6 @@ def status():
 @app.route('/monitor', methods=['GET'])
 def monitor():
     # TODO: flask supports websockets, maybe use that instead?
-
-    # TODO: check if this keeps things busy
 
     # TODO: maybe change this into a subscribe_and_grab that takes an endpoint
     #       to contact when the mutex is released and grabs it for you?
@@ -82,24 +83,26 @@ def grab():
         while True:
             req_id = secrets.token_hex(16)
             req_password = secrets.token_hex(16)
+            with lock:
+                dbc.execute('''INSERT INTO mutexes (id, password, expiration)
+                               VALUES (?, ?, ?)
+                               ON CONFLICT(id) DO NOTHING''',
+                               (req_id, req_password, datetime.now().isoformat()))
+                db.commit()
+                if dbc.rowcount == 1:
+                    break
+        return {'id': req_id, 'password': req_password}
+
+    req_password = flask.request.values.get('password')
+
+    if req_password is not None:
+        with lock:
             dbc.execute('''INSERT INTO mutexes (id, password, expiration)
                            VALUES (?, ?, ?)
                            ON CONFLICT(id) DO NOTHING''',
                            (req_id, req_password, datetime.now().isoformat()))
             db.commit()
-            if dbc.rowcount == 1:
-                break
-        return flask.jsonify({'id': req_id, 'password': req_password})
-
-    req_password = flask.request.values.get('password')
-
-    if req_password is not None:
-        dbc.execute('''INSERT INTO mutexes (id, password, expiration)
-                       VALUES (?, ?, ?)
-                       ON CONFLICT(id) DO NOTHING''',
-                       (req_id, req_password, datetime.now().isoformat()))
-        db.commit()
-    return flask.jsonify({'status': 'fail'}), 400
+    return {'status': 'fail'}, 400
 
 
 @app.route('/release', methods=['POST'])
@@ -108,13 +111,14 @@ def release():
     req_password = flask.request.values.get('password')
 
     if req_id is not None and req_password is not None:
-        dbc.execute('''UPDATE mutexes SET taken = 0 WHERE id = ?, password = ?''',
-                    (req_id, req_password))
-        db.commit()
-        if dbc.rowcount == 1:
-            return flask.jsonify({'status': 'ok'})
+        with lock:
+            dbc.execute('''UPDATE mutexes SET taken = 0 WHERE id = ?, password = ?''',
+                        (req_id, req_password))
+            db.commit()
+            if dbc.rowcount == 1:
+                return {'status': 'ok'}
 
-    return flask.jsonify({'status': 'fail'}), 400
+    return {'status': 'fail'}, 400
 
 
 if __name__ == '__main__':
