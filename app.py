@@ -40,7 +40,7 @@ def get_status(req_id, req_password):
     return {'status': 'fail'}
 
 
-@app.route('/status')
+@app.route('/status', methods=['GET', 'POST'])
 def status():
     data = request.get_json(silent=True)
     if data is None:
@@ -54,7 +54,7 @@ def status():
     return status, 200 if status['status'] == 'ok' else 401
 
 
-@app.route('/monitor', methods=['GET'])
+@app.route('/monitor', methods=['GET', 'POST'])
 def monitor():
     # TODO: flask supports websockets, maybe use that instead?
 
