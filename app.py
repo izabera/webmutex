@@ -96,6 +96,16 @@ def grab():
     req_password = flask.request.values.get('password')
 
     if req_password is not None:
+        # TODO: loop and wait for thing to be unlocked?
+
+        # TODO: password must be changed every time, otherwise
+        #       - user1 grabs mutex
+        #       - user1 forgets to unlock
+        #       - mutex expires
+        #       - user2 grabs mutex
+        #       - user1 decides to unlock
+        #       - user1 unlocks user2's mutex!
+        #       solution: generate a new password
         with lock:
             dbc.execute('''INSERT INTO mutexes (id, password, expiration)
                            VALUES (?, ?, ?)
@@ -112,7 +122,7 @@ def release():
 
     if req_id is not None and req_password is not None:
         with lock:
-            dbc.execute('''UPDATE mutexes SET taken = 0 WHERE id = ?, password = ?''',
+            dbc.execute('''UPDATE mutexes SET taken = 0 WHERE id = ? AND password = ?''',
                         (req_id, req_password))
             db.commit()
             if dbc.rowcount == 1:
