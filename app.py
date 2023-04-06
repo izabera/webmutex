@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from flask import Flask, request, stream_with_context
+from hashlib import sha256
 import json
 import secrets
 import sqlite3
@@ -29,10 +30,11 @@ db.commit()
 app = Flask(__name__)
 
 def get_status(req_id, req_password):
+    hashed_password = sha256(req_password.encode()).hexdigest()
     with lock:
         dbc.execute('''SELECT taken FROM mutexes
                        WHERE id = ? AND password = ?''',
-                       (req_id, req_password))
+                       (req_id, hashed_password))
         records = dbc.fetchall()
     if len(records) == 1:
         return {'status': 'ok', 'taken': records[0][0]}
@@ -87,11 +89,12 @@ def grab():
         while True:
             req_id = secrets.token_hex(16)
             req_password = secrets.token_hex(16)
+            hashed_password = sha256(req_password.encode()).hexdigest()
             with lock:
                 dbc.execute('''INSERT INTO mutexes (id, password, expiration)
                                VALUES (?, ?, ?)
                                ON CONFLICT(id) DO NOTHING''',
-                               (req_id, req_password, datetime.now().isoformat()))
+                               (req_id, hashed_password, datetime.now().isoformat()))
                 db.commit()
                 if dbc.rowcount == 1:
                     break
@@ -108,11 +111,12 @@ def grab():
         #       - user1 decides to unlock
         #       - user1 unlocks user2's mutex!
         #       solution: generate a new password
+        hashed_password = sha256(req_password.encode()).hexdigest()
         with lock:
             dbc.execute('''INSERT INTO mutexes (id, password, expiration)
                            VALUES (?, ?, ?)
                            ON CONFLICT(id) DO NOTHING''',
-                           (req_id, req_password, datetime.now().isoformat()))
+                           (req_id, hashed_password, datetime.now().isoformat()))
             db.commit()
     return {'status': 'fail'}, 400
 
@@ -124,9 +128,10 @@ def release():
     req_password = data.get('password')
 
     if req_id is not None and req_password is not None:
+        hashed_password = sha256(req_password.encode()).hexdigest()
         with lock:
             dbc.execute('''UPDATE mutexes SET taken = 0 WHERE id = ? AND password = ?''',
-                        (req_id, req_password))
+                        (req_id, hashed_password))
             db.commit()
             if dbc.rowcount == 1:
                 return {'status': 'ok'}
