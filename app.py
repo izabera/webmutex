@@ -42,8 +42,13 @@ def get_status(req_id, req_password):
 
 @app.route('/status')
 def status():
-    req_id = flask.request.values.get('id')
-    req_password = flask.request.values.get('password')
+    data = flask.request.get_json(silent=True)
+    if data is None:
+        req_id = flask.request.values.get('id')
+        req_password = flask.request.values.get('password')
+    else:
+        req_id = data.get('id')
+        req_password = data.get('password')
 
     status = get_status(req_id, req_password)
     return status, 200 if status['status'] == 'ok' else 401
@@ -57,8 +62,13 @@ def monitor():
     #       to contact when the mutex is released and grabs it for you?
     #       or maybe keep a separate monitor api just for observabiilty
 
-    req_id = flask.request.values.get('id')
-    req_password = flask.request.values.get('password')
+    data = flask.request.get_json(silent=True)
+    if data is None:
+        req_id = flask.request.values.get('id')
+        req_password = flask.request.values.get('password')
+    else:
+        req_id = data.get('id')
+        req_password = data.get('password')
 
     def loop():
         while True:
@@ -77,7 +87,13 @@ def monitor():
 
 @app.route('/grab', methods=['POST'])
 def grab():
-    req_id = flask.request.values.get('id')
+    data = flask.request.get_json(silent=True)
+    if data is None:
+        req_id = flask.request.values.get('id')
+        req_password = flask.request.values.get('password')
+    else:
+        req_id = data.get('id')
+        req_password = data.get('password')
 
     if req_id in [None, 'new']:
         while True:
@@ -92,8 +108,6 @@ def grab():
                 if dbc.rowcount == 1:
                     break
         return {'id': req_id, 'password': req_password}
-
-    req_password = flask.request.values.get('password')
 
     if req_password is not None:
         # TODO: loop and wait for thing to be unlocked?
@@ -117,8 +131,13 @@ def grab():
 
 @app.route('/release', methods=['POST'])
 def release():
-    req_id = flask.request.values.get('id')
-    req_password = flask.request.values.get('password')
+    data = flask.request.get_json(silent=True)
+    if data is None:
+        req_id = flask.request.values.get('id')
+        req_password = flask.request.values.get('password')
+    else:
+        req_id = data.get('id')
+        req_password = data.get('password')
 
     if req_id is not None and req_password is not None:
         with lock:
