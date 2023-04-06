@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from datetime import datetime
-import flask
+from flask import Flask, request, stream_with_context
 import json
 import secrets
 import sqlite3
@@ -26,7 +26,7 @@ db.commit()
 
 
 
-app = flask.Flask(__name__)
+app = Flask(__name__)
 
 def get_status(req_id, req_password):
     with lock:
@@ -42,10 +42,10 @@ def get_status(req_id, req_password):
 
 @app.route('/status')
 def status():
-    data = flask.request.get_json(silent=True)
+    data = request.get_json(silent=True)
     if data is None:
-        req_id = flask.request.values.get('id')
-        req_password = flask.request.values.get('password')
+        req_id = request.values.get('id')
+        req_password = request.values.get('password')
     else:
         req_id = data.get('id')
         req_password = data.get('password')
@@ -62,10 +62,10 @@ def monitor():
     #       to contact when the mutex is released and grabs it for you?
     #       or maybe keep a separate monitor api just for observabiilty
 
-    data = flask.request.get_json(silent=True)
+    data = request.get_json(silent=True)
     if data is None:
-        req_id = flask.request.values.get('id')
-        req_password = flask.request.values.get('password')
+        req_id = request.values.get('id')
+        req_password = request.values.get('password')
     else:
         req_id = data.get('id')
         req_password = data.get('password')
@@ -74,7 +74,7 @@ def monitor():
         while True:
             yield json.dumps(get_status(req_id, req_password)) + '\n'
             time.sleep(1)
-    return flask.stream_with_context(loop())
+    return stream_with_context(loop())
 
 
 # TODO: implement auto expiration
@@ -87,10 +87,10 @@ def monitor():
 
 @app.route('/grab', methods=['POST'])
 def grab():
-    data = flask.request.get_json(silent=True)
+    data = request.get_json(silent=True)
     if data is None:
-        req_id = flask.request.values.get('id')
-        req_password = flask.request.values.get('password')
+        req_id = request.values.get('id')
+        req_password = request.values.get('password')
     else:
         req_id = data.get('id')
         req_password = data.get('password')
@@ -131,10 +131,10 @@ def grab():
 
 @app.route('/release', methods=['POST'])
 def release():
-    data = flask.request.get_json(silent=True)
+    data = request.get_json(silent=True)
     if data is None:
-        req_id = flask.request.values.get('id')
-        req_password = flask.request.values.get('password')
+        req_id = request.values.get('id')
+        req_password = request.values.get('password')
     else:
         req_id = data.get('id')
         req_password = data.get('password')
