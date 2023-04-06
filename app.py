@@ -42,13 +42,9 @@ def get_status(req_id, req_password):
 
 @app.route('/status', methods=['GET', 'POST'])
 def status():
-    data = request.get_json(silent=True)
-    if data is None:
-        req_id = request.values.get('id')
-        req_password = request.values.get('password')
-    else:
-        req_id = data.get('id')
-        req_password = data.get('password')
+    data = request.get_json(silent=True) or request.values
+    req_id = data.get('id')
+    req_password = data.get('password')
 
     status = get_status(req_id, req_password)
     return status, 200 if status['status'] == 'ok' else 401
@@ -62,13 +58,9 @@ def monitor():
     #       to contact when the mutex is released and grabs it for you?
     #       or maybe keep a separate monitor api just for observabiilty
 
-    data = request.get_json(silent=True)
-    if data is None:
-        req_id = request.values.get('id')
-        req_password = request.values.get('password')
-    else:
-        req_id = data.get('id')
-        req_password = data.get('password')
+    data = request.get_json(silent=True) or request.values
+    req_id = data.get('id')
+    req_password = data.get('password')
 
     def loop():
         while True:
@@ -87,13 +79,9 @@ def monitor():
 
 @app.route('/grab', methods=['POST'])
 def grab():
-    data = request.get_json(silent=True)
-    if data is None:
-        req_id = request.values.get('id')
-        req_password = request.values.get('password')
-    else:
-        req_id = data.get('id')
-        req_password = data.get('password')
+    data = request.get_json(silent=True) or request.values
+    req_id = data.get('id')
+    req_password = data.get('password')
 
     if req_id in [None, 'new']:
         while True:
@@ -131,13 +119,9 @@ def grab():
 
 @app.route('/release', methods=['POST'])
 def release():
-    data = request.get_json(silent=True)
-    if data is None:
-        req_id = request.values.get('id')
-        req_password = request.values.get('password')
-    else:
-        req_id = data.get('id')
-        req_password = data.get('password')
+    data = request.get_json(silent=True) or request.values
+    req_id = data.get('id')
+    req_password = data.get('password')
 
     if req_id is not None and req_password is not None:
         with lock:
