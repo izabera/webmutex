@@ -52,23 +52,23 @@ def status(req_id=None):
     return status, 200 if status['status'] == 'ok' else 401
 
 
-@app.route('/monitor', methods=['GET', 'POST'])
-@app.route('/monitor/<req_id>', methods=['GET', 'POST'])
-def monitor(req_id=None):
-    # TODO: flask supports websockets, maybe use that instead?
-
-    # TODO: maybe change this into a subscribe_and_grab that takes an endpoint
-    #       to contact when the mutex is released and grabs it for you?
-    #       or maybe keep a separate monitor api just for observabiilty
-
-    data = request.get_json(silent=True) or request.values
-    req_id = req_id or data.get('id')
-
-    def loop():
-        while True:
-            yield json.dumps(get_status(req_id)) + '\n'
-            time.sleep(1)
-    return stream_with_context(loop())
+#@app.route('/monitor', methods=['GET', 'POST'])
+#@app.route('/monitor/<req_id>', methods=['GET', 'POST'])
+#def monitor(req_id=None):
+#    # TODO: flask supports websockets, maybe use that instead?
+#
+#    # TODO: maybe change this into a subscribe_and_grab that takes an endpoint
+#    #       to contact when the mutex is released and grabs it for you?
+#    #       or maybe keep a separate monitor api just for observabiilty
+#
+#    data = request.get_json(silent=True) or request.values
+#    req_id = req_id or data.get('id')
+#
+#    def loop():
+#        while True:
+#            yield json.dumps(get_status(req_id)) + '\n'
+#            time.sleep(1)
+#    return stream_with_context(loop())
 
 
 # TODO: implement auto expiration
