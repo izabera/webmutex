@@ -111,7 +111,6 @@ def grab(req_id=None):
     # - user1 decides to unlock
     # - user1 unlocks user2's mutex!
     # solution: generate a new token
-    hashed_token = sha256(req_token.encode()).hexdigest()
     new_token = secrets.token_hex(16)
     hashed_new_token = sha256(new_token.encode()).hexdigest()
 
