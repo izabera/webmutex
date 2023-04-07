@@ -15,10 +15,10 @@ All requests also accept the mutex id via `/request/<id>/`
 
 Parameters:
 
-- `id` (leave empty to generate a new mutex)
+- `id`
 
 If `id` is empty, allocates a new mutex.
-Otherwise, tries to grab an existing mutex if it's free.
+Otherwise, tries to grab an existing mutex if it's currently free.
 
 Returns:
 
@@ -58,6 +58,7 @@ Releases the mutex, using the token received from `/grab`.
 Returns:
 
 - `status`
+- `in_use`
 
 ---
 

@@ -20,7 +20,7 @@ dbc.execute('''
         id TEXT PRIMARY KEY,
         token TEXT NOT NULL,
         expiration TEXT NOT NULL,
-        taken INTEGER DEFAULT 1
+        in_use INTEGER DEFAULT 1
     );
     ''')
 db.commit()
@@ -32,12 +32,12 @@ app = Flask(__name__)
 def get_status(req_id):
     if req_id is not None:
         with lock:
-            dbc.execute('''SELECT taken FROM mutexes
+            dbc.execute('''SELECT in_use FROM mutexes
                            WHERE id = ?''',
                            (req_id, ))
             records = dbc.fetchall()
         if len(records) == 1:
-            return {'status': 'ok', 'taken': records[0][0]}
+            return {'status': 'ok', 'in_use': records[0][0]}
 
     return {'status': 'fail'}
 
@@ -115,8 +115,8 @@ def grab(req_id=None):
     hashed_new_token = sha256(new_token.encode()).hexdigest()
 
     with lock:
-        dbc.execute('''UPDATE mutexes SET token = ?, taken = 1
-                       WHERE id = ? AND taken = 0''',
+        dbc.execute('''UPDATE mutexes SET token = ?, in_use = 1
+                       WHERE id = ? AND in_use = 0''',
                        (hashed_new_token, req_id))
         db.commit()
         if dbc.rowcount == 1:
@@ -134,7 +134,7 @@ def release(req_id=None):
     if req_id is not None and req_token is not None:
         hashed_token = sha256(req_token.encode()).hexdigest()
         with lock:
-            dbc.execute('''UPDATE mutexes SET taken = 0 WHERE id = ? AND token = ?''',
+            dbc.execute('''UPDATE mutexes SET in_use = 0 WHERE id = ? AND token = ?''',
                         (req_id, hashed_token))
             db.commit()
             if dbc.rowcount == 1:
