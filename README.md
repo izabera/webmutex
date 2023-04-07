@@ -7,6 +7,9 @@ or as http form parameters.
 
 All requests also accept the mutex id via `/request/<id>/`
 
+Service is free for now until I get overwhelmed by requests and I have to
+upgrade from the cheapest Linode instance, which will happen probably never.
+
 ---
 
 ### Reserve a mutex: `/reserve`
@@ -146,10 +149,13 @@ curl -X POST https://webmutex.io/release -F "id=$mutex" -F "token=$token"
 
 ## COMING SOON
 
+- the subscription thingy
+- auto expiration
 - usage limits
 - paid enterprise tier because why not
 - ???
 - nice graphs? idk
+- drop-in replacement library for std::mutex (see [nft_ptr](https://github.com/zhuowei/nft_ptr))
 
 ---
 
@@ -157,7 +163,7 @@ curl -X POST https://webmutex.io/release -F "id=$mutex" -F "token=$token"
 
 <style>
     body {margin: 5% auto; background: #f2f2f2; color: #444444; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.8; text-shadow: 0 1px 0 #ffffff; max-width: 73%;}
-    code {background: white;}
+    pre, code {background: #dedede;}
     a {border-bottom: 1px solid #444444; color: #444444; text-decoration: none;}
     a:hover {border-bottom: 0;}
 </style>
