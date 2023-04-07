@@ -20,7 +20,7 @@ dbc.execute('''
         id TEXT PRIMARY KEY,
         token TEXT NOT NULL,
         expiration TEXT NOT NULL,
-        in_use INTEGER DEFAULT 1
+        in_use INTEGER DEFAULT 0
     );
     ''')
 db.commit()
