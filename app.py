@@ -37,7 +37,7 @@ def get_status(req_id):
                            (req_id, ))
             records = dbc.fetchall()
         if len(records) == 1:
-            return {'status': 'ok', 'in_use': records[0][0]}
+            return {'status': 'ok', 'in_use': records[0][0] == 1}
 
     return {'status': 'fail'}
 
