@@ -30,14 +30,15 @@ db.commit()
 app = Flask(__name__)
 
 def get_status(req_id, req_password):
-    hashed_password = sha256(req_password.encode()).hexdigest()
-    with lock:
-        dbc.execute('''SELECT taken FROM mutexes
-                       WHERE id = ? AND password = ?''',
-                       (req_id, hashed_password))
-        records = dbc.fetchall()
-    if len(records) == 1:
-        return {'status': 'ok', 'taken': records[0][0]}
+    if req_id is not None:
+        hashed_password = sha256(req_password.encode()).hexdigest()
+        with lock:
+            dbc.execute('''SELECT taken FROM mutexes
+                           WHERE id = ?''',
+                           (req_id, ))
+            records = dbc.fetchall()
+        if len(records) == 1:
+            return {'status': 'ok', 'taken': records[0][0]}
 
     return {'status': 'fail'}
 
