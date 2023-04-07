@@ -127,7 +127,7 @@ just need to grab a mutex before fetching your db.
 ```sh
 # reserve a new mutex (only needs to be done once)
 curl -X POST https://webmutex.io/reserve > mutex
-mutex=$(jq .id < mutex)
+mutex=$(jq -r .id < mutex)
 
 # run each test, protect any db updates using the mutex
 ./build/mytest > test_results.json
@@ -136,7 +136,7 @@ while ! curl -f -X POST https://webmutex.io/grab -F "id=$mutex" >mymutex; do
     sleep 1 # either loop like this or subscribe to the mutex
 done
 
-token=$(jq .token < mymutex)
+token=$(jq -r .token < mymutex)
 
 curl -O $artifactory_url/test_results.db
 ./test_result_extractor test_results.json test_results.db
