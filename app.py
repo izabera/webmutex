@@ -98,26 +98,29 @@ def grab():
                 db.commit()
                 if dbc.rowcount == 1:
                     break
-        return {'id': req_id, 'password': req_password}
+        return {'status': 'ok', 'id': req_id, 'password': req_password}
 
     if req_password is not None:
         # TODO: loop and wait for thing to be unlocked?
 
-        # TODO: password must be changed every time, otherwise
-        #       - user1 grabs mutex
-        #       - user1 forgets to unlock
-        #       - mutex expires
-        #       - user2 grabs mutex
-        #       - user1 decides to unlock
-        #       - user1 unlocks user2's mutex!
-        #       solution: generate a new password
+        # password must be changed every time, otherwise
+        # - user1 grabs mutex
+        # - user1 forgets to unlock
+        # - mutex expires
+        # - user2 grabs mutex
+        # - user1 decides to unlock
+        # - user1 unlocks user2's mutex!
+        # solution: generate a new password
         hashed_password = sha256(req_password.encode()).hexdigest()
+        new_password = secrets.token_hex(16)
+        hashed_new_password = sha256(new_password.encode()).hexdigest()
         with lock:
-            dbc.execute('''INSERT INTO mutexes (id, password, expiration)
-                           VALUES (?, ?, ?)
-                           ON CONFLICT(id) DO NOTHING''',
-                           (req_id, hashed_password, datetime.now().isoformat()))
+            dbc.execute('''UPDATE mutexes SET password = ?, taken = 1
+                           WHERE id = ? AND password = ? AND taken = 0''',
+                           (hashed_new_password, req_id, hashed_password))
             db.commit()
+            if dbc.rowcount == 1:
+                return {'status': 'ok', 'id': req_id, 'password': new_password}
     return {'status': 'fail'}, 400
 
 
