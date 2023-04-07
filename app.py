@@ -29,9 +29,8 @@ db.commit()
 
 app = Flask(__name__)
 
-def get_status(req_id, req_password):
+def get_status(req_id):
     if req_id is not None:
-        hashed_password = sha256(req_password.encode()).hexdigest()
         with lock:
             dbc.execute('''SELECT taken FROM mutexes
                            WHERE id = ?''',
@@ -44,17 +43,18 @@ def get_status(req_id, req_password):
 
 
 @app.route('/status', methods=['GET', 'POST'])
-def status():
+@app.route('/status/<req_id>', methods=['GET', 'POST'])
+def status(req_id=None):
     data = request.get_json(silent=True) or request.values
-    req_id = data.get('id')
-    req_password = data.get('password')
+    req_id = req_id or data.get('id')
 
-    status = get_status(req_id, req_password)
+    status = get_status(req_id)
     return status, 200 if status['status'] == 'ok' else 401
 
 
 @app.route('/monitor', methods=['GET', 'POST'])
-def monitor():
+@app.route('/monitor/<req_id>', methods=['GET', 'POST'])
+def monitor(req_id=None):
     # TODO: flask supports websockets, maybe use that instead?
 
     # TODO: maybe change this into a subscribe_and_grab that takes an endpoint
@@ -62,12 +62,11 @@ def monitor():
     #       or maybe keep a separate monitor api just for observabiilty
 
     data = request.get_json(silent=True) or request.values
-    req_id = data.get('id')
-    req_password = data.get('password')
+    req_id = req_id or data.get('id')
 
     def loop():
         while True:
-            yield json.dumps(get_status(req_id, req_password)) + '\n'
+            yield json.dumps(get_status(req_id)) + '\n'
             time.sleep(1)
     return stream_with_context(loop())
 
@@ -81,9 +80,10 @@ def monitor():
 
 
 @app.route('/grab', methods=['POST'])
-def grab():
+@app.route('/grab/<req_id>', methods=['GET', 'POST'])
+def grab(req_id=None):
     data = request.get_json(silent=True) or request.values
-    req_id = data.get('id')
+    req_id = req_id or data.get('id')
     req_password = data.get('password')
 
     if req_id in [None, 'new']:
@@ -126,9 +126,10 @@ def grab():
 
 
 @app.route('/release', methods=['POST'])
-def release():
+@app.route('/release/<req_id>', methods=['POST'])
+def release(req_id=None):
     data = request.get_json(silent=True) or request.values
-    req_id = data.get('id')
+    req_id = req_id or data.get('id')
     req_password = data.get('password')
 
     if req_id is not None and req_password is not None:
