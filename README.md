@@ -142,6 +142,19 @@ curl -X PUT $artifactory_url --data-binary @test_results.db
 curl -X POST https://webmutex.io/release -F "id=$mutex" -F "token=$token"
 ```
 
+---
+
+## COMING SOON
+
+- usage limits
+- paid enterprise tier because why not
+- ???
+- nice graphs? idk
+
+---
+
+[Source](https://github.com/izabera/webmutex)
+
 <style>
     body {margin: 5% auto; background: #f2f2f2; color: #444444; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.8; text-shadow: 0 1px 0 #ffffff; max-width: 73%;}
     code {background: white;}
