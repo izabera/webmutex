@@ -79,27 +79,28 @@ def status(req_id=None):
 #       maybe a keep_alive endpoint that autoexpires if no contact for a while?
 
 
+@app.route('/reserve', methods=['POST'])
+def reserve():
+    while True:
+        req_id = secrets.token_hex(16)
+        req_token = secrets.token_hex(16)
+        hashed_token = sha256(req_token.encode()).hexdigest()
+        with lock:
+            dbc.execute('''INSERT INTO mutexes (id, token, expiration)
+                           VALUES (?, ?, ?)
+                           ON CONFLICT(id) DO NOTHING''',
+                           (req_id, hashed_token, datetime.now().isoformat()))
+            db.commit()
+            if dbc.rowcount == 1:
+                break
+    return {'status': 'ok', 'id': req_id}
+
 @app.route('/grab', methods=['POST'])
-@app.route('/grab/<req_id>', methods=['GET', 'POST'])
+@app.route('/grab/<req_id>', methods=['POST'])
 def grab(req_id=None):
     data = request.get_json(silent=True) or request.values
     req_id = req_id or data.get('id')
     req_token = data.get('token')
-
-    if req_id in [None, 'new']:
-        while True:
-            req_id = secrets.token_hex(16)
-            req_token = secrets.token_hex(16)
-            hashed_token = sha256(req_token.encode()).hexdigest()
-            with lock:
-                dbc.execute('''INSERT INTO mutexes (id, token, expiration)
-                               VALUES (?, ?, ?)
-                               ON CONFLICT(id) DO NOTHING''',
-                               (req_id, hashed_token, datetime.now().isoformat()))
-                db.commit()
-                if dbc.rowcount == 1:
-                    break
-        return {'status': 'ok', 'id': req_id, 'token': req_token}
 
     # TODO: loop and wait for thing to be unlocked?
 
