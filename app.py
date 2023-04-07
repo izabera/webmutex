@@ -11,7 +11,7 @@ import time
 
 lock = threading.Lock()
 
-db = sqlite3.connect('database.db', check_same_thread=False)
+db = sqlite3.connect('webmutex.db', check_same_thread=False)
 
 dbc = db.cursor()
 
