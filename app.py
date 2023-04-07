@@ -18,7 +18,7 @@ dbc = db.cursor()
 dbc.execute('''
     CREATE TABLE IF NOT EXISTS mutexes (
         id TEXT PRIMARY KEY,
-        password TEXT NOT NULL,
+        token TEXT NOT NULL,
         expiration TEXT NOT NULL,
         taken INTEGER DEFAULT 1
     );
@@ -84,44 +84,44 @@ def monitor(req_id=None):
 def grab(req_id=None):
     data = request.get_json(silent=True) or request.values
     req_id = req_id or data.get('id')
-    req_password = data.get('password')
+    req_token = data.get('token')
 
     if req_id in [None, 'new']:
         while True:
             req_id = secrets.token_hex(16)
-            req_password = secrets.token_hex(16)
-            hashed_password = sha256(req_password.encode()).hexdigest()
+            req_token = secrets.token_hex(16)
+            hashed_token = sha256(req_token.encode()).hexdigest()
             with lock:
-                dbc.execute('''INSERT INTO mutexes (id, password, expiration)
+                dbc.execute('''INSERT INTO mutexes (id, token, expiration)
                                VALUES (?, ?, ?)
                                ON CONFLICT(id) DO NOTHING''',
-                               (req_id, hashed_password, datetime.now().isoformat()))
+                               (req_id, hashed_token, datetime.now().isoformat()))
                 db.commit()
                 if dbc.rowcount == 1:
                     break
-        return {'status': 'ok', 'id': req_id, 'password': req_password}
+        return {'status': 'ok', 'id': req_id, 'token': req_token}
 
     # TODO: loop and wait for thing to be unlocked?
 
-    # password must be changed every time, otherwise
+    # token must be changed every time, otherwise
     # - user1 grabs mutex
     # - user1 forgets to unlock
     # - mutex expires
     # - user2 grabs mutex
     # - user1 decides to unlock
     # - user1 unlocks user2's mutex!
-    # solution: generate a new password
-    hashed_password = sha256(req_password.encode()).hexdigest()
-    new_password = secrets.token_hex(16)
-    hashed_new_password = sha256(new_password.encode()).hexdigest()
+    # solution: generate a new token
+    hashed_token = sha256(req_token.encode()).hexdigest()
+    new_token = secrets.token_hex(16)
+    hashed_new_token = sha256(new_token.encode()).hexdigest()
 
     with lock:
-        dbc.execute('''UPDATE mutexes SET password = ?, taken = 1
+        dbc.execute('''UPDATE mutexes SET token = ?, taken = 1
                        WHERE id = ? AND taken = 0''',
-                       (hashed_new_password, req_id))
+                       (hashed_new_token, req_id))
         db.commit()
         if dbc.rowcount == 1:
-            return {'status': 'ok', 'id': req_id, 'password': new_password}
+            return {'status': 'ok', 'id': req_id, 'token': new_token}
     return {'status': 'fail'}, 400
 
 
@@ -130,13 +130,13 @@ def grab(req_id=None):
 def release(req_id=None):
     data = request.get_json(silent=True) or request.values
     req_id = req_id or data.get('id')
-    req_password = data.get('password')
+    req_token = data.get('token')
 
-    if req_id is not None and req_password is not None:
-        hashed_password = sha256(req_password.encode()).hexdigest()
+    if req_id is not None and req_token is not None:
+        hashed_token = sha256(req_token.encode()).hexdigest()
         with lock:
-            dbc.execute('''UPDATE mutexes SET taken = 0 WHERE id = ? AND password = ?''',
-                        (req_id, hashed_password))
+            dbc.execute('''UPDATE mutexes SET taken = 0 WHERE id = ? AND token = ?''',
+                        (req_id, hashed_token))
             db.commit()
             if dbc.rowcount == 1:
                 return {'status': 'ok'}
